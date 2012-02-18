@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+import sys, os, time, stat, subprocess
+from StringIO import StringIO
+import shader_compiler
+
+os.environ['NODE_PATH'] = '%s:%s' % (os.path.expanduser('~/node.js/lib/node'), os.path.expanduser('~/node.js/lib/node_modules/'))
+
+def convertify(converter=list):
+    def _decorator(fun):
+        def _wrapper(*args, **kwargs):
+            return converter(fun(*args, **kwargs))
+        return _wrapper
+    return _decorator
+
+@convertify(converter=set)
+def getfiles(path):
+    for root, dirs, names in os.walk(path):
+        for name in names:
+            filename = os.path.join(root, name)
+            yield root, name, get_mtime(filename)
+
+def get_mtime(name):
+    return os.stat(name)[stat.ST_MTIME]
+
+def mkdirs(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+def get_paths(path, name):
+    infile = os.path.join(path, name)
+    outfolder = os.path.join('compiled', path[len(src_dir):].strip('/'))
+    outfile = os.path.join(outfolder, '%s.js' % os.path.splitext(name)[0])
+    return infile, outfile, outfolder
+
+def coffee_compile(infile, outfolder):
+    print 'coffee compile: %s' % infile
+    command = ['coffee', '--compile', '--bare', '--require', './lib/modulize.coffee', '--output', outfolder, infile]
+    subprocess.call(command)
+
+def compile(infile, outfolder):
+    if infile.endswith('.coffee'):
+        coffee_compile(infile, outfolder)
+    elif infile.endswith('.shader'):
+        mkdirs(outfolder)
+        outfile = '%s.js' % os.path.splitext(os.path.basename(infile))[0]
+        print 'compile shader program: %s' % infile
+        shader_compiler.program(infile, os.path.join(outfolder, outfile))
+    elif infile.endswith('.glsl'):
+        mkdirs(outfolder)
+        outfile = '%s.js' % os.path.splitext(os.path.basename(infile))[0]
+        print 'compile shader include: %s' % infile
+        shader_compiler.include(infile, os.path.join(outfolder, outfile))
+
+def pack():
+    command = ['node', 'lib/r.js', '-o', 'out=run/main.js', 'name=main', 'baseUrl=compiled']
+    print 'packing'
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process.wait()
+    if process.returncode:
+        print process.stderr.read()
+
+def initial_compile(files):
+    compiled = False
+    for path, name, mtime in files:
+        infile, outfile, outfolder = get_paths(path, name)
+        if os.path.exists(outfile):
+            out_mtime = get_mtime(outfile)
+            if out_mtime < mtime:
+                compile(infile, outfolder)
+                compiled = True
+        else:
+            compile(infile, outfolder)
+            compiled = True
+
+    return compiled
+
+if __name__ == '__main__':
+    try:
+        src_dir = 'src'
+        files = getfiles(src_dir)
+        command = sys.argv[1]
+
+        if command == 'pack':
+            pack()
+
+        elif command == 'compile':
+            if initial_compile(files):
+                pack()
+
+        elif command == 'watch':
+            if initial_compile(files):
+                pack()
+
+            while 1:
+                time.sleep(0.5)
+                new_files = getfiles(src_dir)
+                changed = new_files - files
+                for path, name, mtime in changed:
+                    infile, outfile, outfolder = get_paths(path, name)
+                    compile(infile, outfolder)
+                if changed:
+                    pack()
+
+                files = new_files
+    except KeyboardInterrupt: pass

@@ -1,0 +1,7 @@
+define(function(require, exports, module){
+    var Shader = require('webgl/shader');
+    var dependencies = ({"./spherical_harmonics": require("./spherical_harmonics")});
+    return function(gl){
+        return new Shader(gl, {"fragment": ["precision highp int;", "precision highp float;", "precision highp vec2;", "precision highp vec3;", "precision highp vec4;", "precision highp ivec2;", "precision highp ivec3;", "precision highp ivec4;", {"text": "varying vec3 vNormal;", "num": 0}, {"include": "./spherical_harmonics"}, {"text": "void main(){", "num": 15}, {"text": "vec3 normal = normalize(vNormal);", "num": 16}, {"text": "vec3 incident = shLight(normal, beach);", "num": 17}, {"text": "gl_FragColor = vec4(incident, 1.0);", "num": 18}, {"text": "}", "num": 19}], "vertex": ["precision highp int;", "precision highp float;", "precision highp vec2;", "precision highp vec3;", "precision highp vec4;", "precision highp ivec2;", "precision highp ivec3;", "precision highp ivec4;", {"text": "varying vec3 vNormal;", "num": 0}, {"include": "./spherical_harmonics"}, {"text": "attribute vec3 position, normal;", "num": 5}, {"text": "uniform mat4 proj, view, model;", "num": 6}, {"text": "void main(){", "num": 8}, {"text": "vNormal = mat3(model) * normal;", "num": 9}, {"text": "gl_Position = proj * view * model * vec4(position, 1.0);", "num": 10}, {"text": "}", "num": 11}], "name": "src/shaders/display.shader"}, dependencies);
+    }
+})
