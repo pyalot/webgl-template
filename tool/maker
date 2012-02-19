@@ -3,8 +3,30 @@
 import sys, os, time, stat, subprocess
 from StringIO import StringIO
 import shader_compiler
+from shutil import copyfile
 
-os.environ['NODE_PATH'] = '%s:%s' % (os.path.expanduser('~/node.js/lib/node'), os.path.expanduser('~/node.js/lib/node_modules/'))
+here = os.path.dirname(os.path.abspath(__file__))
+
+process = subprocess.Popen(['which', 'coffee'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+process.wait()
+if process.returncode:
+    raise Exception(process.stderr.read())
+else:
+    path = process.stdout.read().strip()
+    if not os.path.exists(path):
+        raise Exception('coffee path does not exist: %s' % path)
+    path = os.path.dirname(path)
+
+node_lib = os.path.abspath(os.path.join(path, '..', 'lib', 'node'))
+node_modules = os.path.abspath(os.path.join(path, '..', 'lib', 'node_modules'))
+
+if not os.path.exists(node_lib):
+    raise Exception('Node lib path does not exist: %s' % node_lib)
+
+if not os.path.exists(node_modules):
+    raise Exception('Node modules path does not exist: %s' % node_lib)
+
+os.environ['NODE_PATH'] = '%s:%s' % (node_lib, node_modules)
 
 def convertify(converter=list):
     def _decorator(fun):
@@ -29,13 +51,13 @@ def mkdirs(path):
 
 def get_paths(path, name):
     infile = os.path.join(path, name)
-    outfolder = os.path.join('compiled', path[len(src_dir):].strip('/'))
+    outfolder = os.path.join('debug', path[len(src_dir):].strip('/'))
     outfile = os.path.join(outfolder, '%s.js' % os.path.splitext(name)[0])
     return infile, outfile, outfolder
 
 def coffee_compile(infile, outfolder):
     print 'coffee compile: %s' % infile
-    command = ['coffee', '--compile', '--bare', '--require', './lib/modulize.coffee', '--output', outfolder, infile]
+    command = ['coffee', '--compile', '--bare', '--require', os.path.join(here, 'modulize.coffee'), '--output', outfolder, infile]
     subprocess.call(command)
 
 def compile(infile, outfolder):
@@ -51,9 +73,15 @@ def compile(infile, outfolder):
         outfile = '%s.js' % os.path.splitext(os.path.basename(infile))[0]
         print 'compile shader include: %s' % infile
         shader_compiler.include(infile, os.path.join(outfolder, outfile))
+    elif infile.endswith('.js'):
+        mkdirs(outfolder)
+        outfile = os.path.join(outfolder, os.path.basename(infile))
+        print 'copying js: %s' % infile
+        copyfile(infile, outfile)
 
 def pack():
-    command = ['node', 'lib/r.js', '-o', 'out=run/main.js', 'name=main', 'baseUrl=compiled']
+    #command = ['node', 'tool/r.js', '-o', 'out=packed/main.js', 'name=main', 'baseUrl=debug']
+    command = ['node', 'tool/r.js', '-o', 'baseUrl=debug', 'name=../tool/almond', 'include=main', 'out=packed/main.js']
     print 'packing'
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process.wait()

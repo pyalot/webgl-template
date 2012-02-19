@@ -1,6 +1,9 @@
+require 'lib/jquery'
+require 'lib/webgl-debug'
+
 schedule = require 'schedule'
-Display = require './shaders/display'
-Cube = require 'webgl/cube'
+display = require './shaders/display'
+cube = require 'webgl/cube'
 require 'matrix'
 
 $ ->
@@ -11,9 +14,9 @@ $ ->
     if debug
         gl = WebGLDebugUtils.makeDebugContext gl, (err, name, args) ->
             throw "function: #{name}: #{WebGLDebugUtils.glEnumToString err}"
-    
-    shader = new Display gl
-    cube = new Cube gl, 0.5
+   
+    shader = display.create gl
+    geom = new cube.Cube gl, 0.5
     proj = mat4()
     view = mat4()
     model = mat4()
@@ -35,7 +38,7 @@ $ ->
 
     rotation = 0.0
 
-    schedule (current, delta) ->
+    schedule.run (current, delta) ->
         rotation += delta*60 #degrees/s
         view
             .m4identity()
@@ -52,4 +55,4 @@ $ ->
             .mat4('proj', proj)
             .mat4('view', view)
             .mat4('model', model)
-            .draw(cube)
+            .draw(geom)

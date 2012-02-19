@@ -1,4 +1,4 @@
-return (callback) ->
+exports.run = (callback) ->
     last = Date.now()
     start = last
 

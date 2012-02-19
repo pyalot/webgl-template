@@ -1,10 +1,10 @@
 all: watch
 watch:
-	./lib/maker watch
+	./tool/maker watch
 compile:
-	./lib/maker compile
+	./tool/maker compile
 pack:
-	./lib/maker pack
+	./tool/maker pack
 clean:
-	rm -rf compiled/*
-	rm -f run/main.js
+	rm -rf debug/*
+	rm -f packed/main.js

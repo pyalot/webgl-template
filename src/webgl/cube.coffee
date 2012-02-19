@@ -1,4 +1,4 @@
-return class Cube
+exports.Cube = class
     float_size = Float32Array.BYTES_PER_ELEMENT
     position_off = 0
     normal_off = 3

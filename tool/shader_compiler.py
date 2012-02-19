@@ -31,7 +31,9 @@ def include(infile, outfile):
     dependencies = '{%s}' % ','.join(['"%s": require("%s")' % (name, name) for name in requires])
     result = '''
 define(function(require, exports, module){
-    return ({dependencies: %s, source: %s, name: "%s"});
+    exports.dependencies = (%s);
+    exports.source = (%s);
+    exports.name = "%s";
 });
     '''.strip() % (dependencies, dumps(result), infile)
     #result = 'define(%s, data)' % (dumps(requires), dumps(result))
@@ -87,10 +89,11 @@ def program(infile, outfile):
     requires = '({%s})' % ','.join(['"%s": require("%s")' % (name, name) for name in requires])
     result = '''
 define(function(require, exports, module){
-    var Shader = require('webgl/shader');
+    var shader = require('webgl/shader');
     var dependencies = %s;
-    return function(gl){
-        return new Shader(gl, %s, dependencies);
+
+    exports.create = function(gl){
+        return new shader.Shader(gl, %s, dependencies);
     }
 })
     '''.strip() % (requires, data)

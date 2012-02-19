@@ -18,7 +18,7 @@ resolveInclude = (file_lines, included, dependencies, name) ->
     else
         return []
 
-return class Shader
+exports.Shader = class Shader
     constructor: (@gl, params, @dependencies) ->
         @name       = params.name
         @lines      = params.lines
