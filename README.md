@@ -1,3 +1,5 @@
+# webgl-template
+
 This project is meant as a template to simplify writing
 Coffeescript WebGL applications.
 
@@ -11,17 +13,17 @@ Using it as a template, the following features are solved
 + Shader class tracks line numbers across includes to provide meaningful debug messages
 + Can be started in a watch mode that looks out for file modifications
 
-EXAMPLE:
+## EXAMPLE
 
 The project is its own example, start with looking at the Makefile and the src/main.coffee
 
-USAGE:
+## USAGE
 
 * clone this project
 * open a terminal to the folder and start "make watch"
 * edit files in the project and reload in browser
 
-REQUIRES:
+## REQUIRES
 
 * python
 * node.js
