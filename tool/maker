@@ -17,16 +17,12 @@ else:
         raise Exception('coffee path does not exist: %s' % path)
     path = os.path.dirname(path)
 
-node_lib = os.path.abspath(os.path.join(path, '..', 'lib', 'node'))
 node_modules = os.path.abspath(os.path.join(path, '..', 'lib', 'node_modules'))
 
-if not os.path.exists(node_lib):
-    raise Exception('Node lib path does not exist: %s' % node_lib)
-
 if not os.path.exists(node_modules):
-    raise Exception('Node modules path does not exist: %s' % node_lib)
+    raise Exception('Node modules path does not exist: %s' % node_modules)
 
-os.environ['NODE_PATH'] = '%s:%s' % (node_lib, node_modules)
+os.environ['NODE_PATH'] = '%s' % node_modules
 
 def convertify(converter=list):
     def _decorator(fun):
