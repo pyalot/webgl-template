@@ -4,15 +4,17 @@ import sys, os, time, stat, subprocess
 from StringIO import StringIO
 import shader_compiler
 from shutil import copyfile
+from datetime import datetime
+from signal import SIGKILL
 
 here = os.path.dirname(os.path.abspath(__file__))
 
 process = subprocess.Popen(['which', 'coffee'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-process.wait()
+out, err = process.communicate()
 if process.returncode:
-    raise Exception(process.stderr.read())
+    raise Exception(err)
 else:
-    path = process.stdout.read().strip()
+    path = out.strip()
     if not os.path.exists(path):
         raise Exception('coffee path does not exist: %s' % path)
     path = os.path.dirname(path)
@@ -23,6 +25,17 @@ if not os.path.exists(node_modules):
     raise Exception('Node modules path does not exist: %s' % node_modules)
 
 os.environ['NODE_PATH'] = '%s' % node_modules
+
+message_count = 0
+def message(text):
+    global message_count
+    now = datetime.now().strftime('%H:%M:%S')
+    print '[%04i %s] %s' % (message_count, now, text)
+    message_count+=1
+
+def error(text):
+    sys.stdout.write('\x1b[31m%s\x1b[39m' % text)
+    sys.stdout.flush()
 
 def convertify(converter=list):
     def _decorator(fun):
@@ -52,9 +65,12 @@ def get_paths(path, name):
     return infile, outfile, outfolder
 
 def coffee_compile(infile, outfolder):
-    print 'coffee compile: %s' % infile
+    message('coffee compile: %s' % infile)
     command = ['coffee', '--compile', '--bare', '--require', os.path.join(here, 'modulize.coffee'), '--output', outfolder, infile]
-    subprocess.call(command)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if process.returncode:
+        error(err)
 
 def compile(infile, outfolder):
     if infile.endswith('.coffee'):
@@ -62,27 +78,27 @@ def compile(infile, outfolder):
     elif infile.endswith('.shader'):
         mkdirs(outfolder)
         outfile = '%s.js' % os.path.splitext(os.path.basename(infile))[0]
-        print 'compile shader program: %s' % infile
+        message('compile shader program: %s' % infile)
         shader_compiler.program(infile, os.path.join(outfolder, outfile))
     elif infile.endswith('.glsl'):
         mkdirs(outfolder)
         outfile = '%s.js' % os.path.splitext(os.path.basename(infile))[0]
-        print 'compile shader include: %s' % infile
+        message('compile shader include: %s' % infile)
         shader_compiler.include(infile, os.path.join(outfolder, outfile))
     elif infile.endswith('.js'):
         mkdirs(outfolder)
         outfile = os.path.join(outfolder, os.path.basename(infile))
-        print 'copying js: %s' % infile
+        message('copying js: %s' % infile)
         copyfile(infile, outfile)
 
 def pack():
     #command = ['node', 'tool/r.js', '-o', 'out=packed/main.js', 'name=main', 'baseUrl=debug']
     command = ['node', 'tool/r.js', '-o', 'baseUrl=debug', 'name=../tool/almond', 'include=main', 'out=packed/main.js']
-    print 'packing'
+    message('packing')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    process.wait()
+    out, err = process.communicate()
     if process.returncode:
-        print process.stderr.read()
+        error(err)
 
 def initial_compile(files):
     compiled = False
@@ -114,7 +130,8 @@ if __name__ == '__main__':
 
         elif command == 'watch':
             if initial_compile(files):
-                pack()
+                #pack()
+                pass
 
             while 1:
                 time.sleep(0.5)
@@ -124,7 +141,8 @@ if __name__ == '__main__':
                     infile, outfile, outfolder = get_paths(path, name)
                     compile(infile, outfolder)
                 if changed:
-                    pack()
+                    #pack()
+                    pass
 
                 files = new_files
     except KeyboardInterrupt: pass
